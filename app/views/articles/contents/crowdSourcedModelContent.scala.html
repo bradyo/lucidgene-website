@@ -1,0 +1,445 @@
+@import views.html.helpers.sqlBlock
+@import org.joda.time.DateTime
+
+@(title: String, publishDate: DateTime, tags: List[String])
+
+<h2>Introduction</h2>
+
+<p>I've been working on this data model and workflow specifically for a scientific data platforms in order to
+    simplify contributions from casual users without sacrificing the platform's overall data integrity. This
+    post describes how to build a moderated workflow that tracks every change made by users to the data model,
+    allowing moderators to guide input into your data platform made by common users.</p>
+
+<p>This model puts all versions of an entity on the same playing field to allow all previous versions to be accessed
+    in the same way as the current version. While this increases query complexity, it makes it possible to do full
+    searches against the database for the most recent entity version at a given point in time. So instead of
+    releasing your database in build cycles, you can release the data in real time while maintaining consistent
+    results for a given query. This is a powerful feature for scientific data platforms, allowing replication of
+    down-steam analyses performed on query results without requiring a complete snapshot of the whole database
+    at the time of analysis. As a result, any specific query will always return the same results, despite the
+    underlying data being in a constant state of revision.</p>
+
+<p>This model operates on entities in a CRUD-like fashion, but instead of performing <code>Update</code> operations on
+    entities, a <code>Create</code> operation is used to make a new version of the entity. In this way, CRUD operations are
+    performed on entity versions rather than entities. This allows us to expose only <code>Create</code> operations to
+    basic users. For example, to delete an entity, a basic user would <code>Create</code> a new version having a
+    <code>status = "deleted"</code> (soft delete), and a moderator would then <code>Update</code> the version
+    <code>revisionStatus = "accepted"</code>. This model allows for complete version tracking - including
+    blame-ability for all changes.</p>
+
+<h2>What We Need</h2>
+
+<p>For a real-time crowd sourced data platform, we need to be able to:</p>
+
+<ul>
+	<li>store entities with complex relationships</li>
+	<li>store multiple “pending” versions for an entity, including all relationships</li>
+	<li>track which users created each entity version</li>
+	<li>track which user reviewed each entity version</li>
+	<li>fetch the most recent accepted version of an entity, including relationships, since a given time</li>
+	<li>fetch a collection of previous versions of an entity, including relationships, since a given time</li>
+	<li>fetch a collection of entities matching search criteria, including relationships, since a given time</li>
+	<li>fetch a collection of most recently accepted version of entities matching search criteria, including
+        relationships, since a given time</li>
+</ul>
+
+<h2>Data Model</h2>
+
+<p>For this example, I am going to show a simple model for a platform that allows users to create collections of
+    files. Each Post entity can have many File entities.</p>
+
+<div class="thumbnail">
+    <a href="@routes.Assets.versioned("uploads/articles/model.png")">
+        <img src="@routes.Assets.versioned("uploads/articles/model.png")" alt="" />
+    </a>
+</div>
+
+<h3>PostVersion Entity Properties</h3>
+
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Comment</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Id</td>
+            <td>Guid</td>
+            <td>ID for the specific Post version</td>
+        </tr>
+        <tr>
+            <td>PostId</td>
+            <td>Guid</td>
+            <td>Global ID for the post – all versions share the same global ID</td>
+        </tr>
+        <tr>
+            <td>Status</td>
+            <td>Enum {public, deleted}</td>
+            <td>Indicator of the state of the version (used for soft deletion)</td>
+        </tr>
+        <tr>
+            <td>AuthoredAt</td>
+            <td>DateTime</td>
+            <td>When the post version was created</td>
+        </tr>
+        <tr>
+            <td>Author</td>
+            <td>User</td>
+            <td>User entity that created this post version</td>
+        </tr>
+        <tr>
+            <td>AuthorComment</td>
+            <td>String</td>
+            <td>Comment attached to this post version for reviewer to read</td>
+        </tr>
+        <tr>
+            <td>ReviewStatus</td>
+            <td>Enum {pending, accepted, rejected}</td>
+            <td>Indicator of the review status of the post version. Pending versions have not yet been reviewed
+                by a moderator</td>
+        </tr>
+        <tr>
+            <td>ReviewedAt</td>
+            <td>DateTime</td>
+            <td>When the post version was reviewed</td>
+        </tr>
+        <tr>
+            <td>Reviewer</td>
+            <td>User</td>
+            <td>User entity that reviewed this post version</td>
+        </tr>
+        <tr>
+            <td>ReviewerComment</td>
+            <td>String</td>
+            <td>Comment made by reviewer for author</td>
+        </tr>
+        <tr>
+            <td>IsCurrent</td>
+            <td>Boolean</td>
+            <td>If the entity is the most recent version – this is a hack to make searching faster for the
+                most current versions</td>
+        </tr>
+        <tr>
+            <td>Description</td>
+            <td>String</td>
+            <td>Description of the post</td>
+        </tr>
+        <tr>
+            <td>Files</td>
+            <td>FileCollection</td>
+            <td>List of File items related to this post</td>
+        </tr>
+    </tbody>
+</table>
+
+<h3>File Entity Properties</h3>
+
+<table class="table table-bordered">
+    <tbody>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Comment</th>
+        </tr>
+        <tr>
+            <td>Id</td>
+            <td>Guid</td>
+            <td>ID for the File entity</td>
+        </tr>
+        <tr>
+            <td>PostVersionId</td>
+            <td>Guid</td>
+            <td>ID for the parent post version</td>
+        </tr>
+        <tr>
+            <td>Filename</td>
+            <td>String</td>
+            <td>Filename</td>
+        </tr>
+        <tr>
+            <td>Description</td>
+            <td>String</td>
+            <td>Description of the File</td>
+        </tr>
+        <tr>
+            <td>Data</td>
+            <td>Binary</td>
+            <td>Binary encoded file data</td>
+        </tr>
+    </tbody>
+</table>
+
+<h3>User Entity Properties</h3>
+
+<table class="table table-bordered">
+    <tbody>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Comment</th>
+        </tr>
+        <tr>
+            <td>Id</td>
+            <td>Guid</td>
+            <td>ID for the User entity</td>
+        </tr>
+        <tr>
+            <td>Username</td>
+            <td>String</td>
+            <td>Username</td>
+        </tr>
+        <tr>
+            <td>DispalyName</td>
+            <td>String</td>
+            <td>The user's name as they would like it to appear to the program.</td>
+        </tr>
+    </tbody>
+</table>
+
+<p>In this example, you can see that <code>File</code> entities are subordinate to <code>Post</code> entities.
+    Therefore, File entities do not need all the meta data that <code>Post</code> entities do. However, there
+    are many cases where you might want subordinate entities to be managed in the same way as the parent entity.
+    In order to achieve this functionality, you would need to apply all meta data and work flow processes to
+    the subordinate entities you want to be tracked.</p>
+
+<h2>Workflow for Model Transitions</h2>
+
+<p>Below are details for the common state transitions of the model.</p>
+
+<h3>Creating a New Post</h3>
+
+<ul>
+	<li>Users creates a new <code>PostVersion</code> entity</li>
+	<li>A Moderator updates the new <code>PostVersion</code> entity meta data to accept or reject</li>
+</ul>
+
+<div class="thumbnail">
+    <a href="@routes.Assets.versioned("uploads/articles/create11.png")">
+        <img src="@routes.Assets.versioned("uploads/articles/create11.png")" alt="" />
+    </a>
+</div>
+
+<h3>Updating a Post</h3>
+
+<ul>
+	<li>User creates a new <code>PostVersion</code> entity with an existing Post ID</li>
+	<li>Moderator updates new <code>PostVersion</code> meta data to accept or reject</li>
+</ul>
+
+<div class="thumbnail">
+    <a href="@routes.Assets.versioned("uploads/articles/update.png")">
+        <img src="@routes.Assets.versioned("uploads/articles/update.png")" />
+    </a>
+</div>
+
+<h3>Deleting a Post</h3>
+
+<ul>
+	<li>User creates a new <code>PostVersion</code> entity with existing Post ID and sets "status" to "deleted"</li>
+	<li>Moderator updates new <code>PostVersion</code> meta data to accept or reject</li>
+</ul>
+
+<div class="thumbnail">
+    <a href="@routes.Assets.versioned("uploads/articles/delete.png")">
+        <img src="@routes.Assets.versioned("uploads/articles/delete.png")" alt="" />
+    </a>
+</div>
+
+<h2>Fetching Data</h2>
+
+<p>These examples show ORM code for fetching data using this model (it is Doctrine 2 ORM DQL code, which should be
+    familiar to anyone using any Hibernate-like query languages). It should be easy enough to convert it to SQL
+    if needed.</p>
+
+<p>The basic idea is to subset versions based on a target date, then select the max accepted version
+    (this gives you the current version at that time point), then filter across current versions based
+    on your selection criteria. This is shown in the figure below (the two subset steps can be combined
+    into one SQL sub-query):</p>
+
+<div class="thumbnail">
+    <a href="@routes.Assets.versioned("uploads/articles/query-theory.png")">
+        <img src="@routes.Assets.versioned("uploads/articles/query-theory.png")" alt="" />
+    </a>
+</div>
+
+<p>All queries against this model can be thought of as simple sub-setting of entity space, each version being a
+    unique element.</p>
+
+<h3>Fetching All Versions of Post</h3>
+
+@sqlBlock(
+    """
+    SELECT * FROM PostVersion JOIN Author, Reviewer, File
+    WHERE PostVersion.AuthoredAt < "2011-05-05"
+    ORDER BY PostVersion.AuthoredAt DESC
+    """
+)
+
+<p>(Note: this returns all versions, including rejected versions and soft-deleted versions)</p>
+
+<h3>Fetching the Most Recent Accepted Version of each Post</h3>
+
+@sqlBlock(
+    """
+    SELECT PostVersion FROM Application\Model\PostVersion PostVersion
+    JOIN PostVersion.Author Author
+    JOIN PostVersion.Reviewer Reviewer
+    JOIN PostVersion.FilePostVersion.File File
+    WHERE PostVersion.ReviewStatus = "accepted"
+       AND PostVersion.PostId = 3
+    ORDER BY PostVersion.ReviewedAt DESC
+    LIMIT 1
+    """
+)
+
+<h3>Fetching the Most Recently Accepted Posts Matching Search</h3>
+
+@sqlBlock(
+    """
+    SELECT PostVersion
+    FROM Application\Model\PostVersion PostVersion
+    JOIN PostVersion.Author Author
+    JOIN PostVersion.Reviewer Reviewer
+    JOIN PostVersion.FilePostVersion.File File
+    WHERE PostVersion.ReviewedAt = (
+            SELECT MAX(PostVersionSubset.ReviewedAt)
+            FROM Application\Model\PostVersion PostVersionSubset
+            WHERE PostVersion.Id = PostVersionSubset.Id
+                AND PostVersionSubset.ReviewStatus = "accepted"
+                AND PostVersionSubset.ReviewedAt &lt; "2011-05-05"
+            GROUP BY PostVersionSubset.Id
+        )
+        AND PostVersion.Status = "public"
+        AND PostVersion.ReviewStatus = "accepted"
+        AND PostVersion.Author.Username = "brady"
+        AND (
+            PostVersion.File.Description LIKE "%searchTerm%"
+            OR PostVersion.File.Description LIKE "%searchTerm"
+        )
+    ORDER BY PostVersion.AuthoredAt DESC
+    """
+)
+
+<p>As you can see, the first <code>WHERE</code> clause selects all <code>PostVersion</code> entities reviewed
+    since the given time point ("2011-05-05"). Then additional search criteria can be added to the top level
+    query to search within the subset. Though the sub-query has a performance hit, it allows queries across
+    versions at a particular time point. Since the query results are not expected to change when new data
+    is added, they can be cached without expiration.</p>
+
+<h3>Speeding up Fetches on Globally Most Recently Accepted Posts</h3>
+
+<p>For fetches of the most recent versions ("since" datetime = now), we can add an indexed field to find
+    the most recent version without a sub-query. This works great for when you don't need the most recent
+    versions at a particular time point and just want to fetch the most-recent versions of all current posts.</p>
+
+@sqlBlock(
+    """
+    SELECT PostVersion
+    FROM Application\Model\PostVersion PostVersion
+    JOIN PostVersion.Author Author
+    JOIN PostVersion.Reviewer Reviewer
+    JOIN PostVersion.FilePostVersion.File File
+    WHERE PostVersion.IsCurrent = true
+        AND PostVersion.Status = "public"
+        AND PostVersion.ReviewStatus = "accepted"
+        AND PostVersion.Author.Username = "Brady"
+        AND (
+            PostVersion.File.Description LIKE "%searchTerm%"
+            OR PostVersion.File.Description LIKE "%searchTerm%"
+        )
+    ORDER BY PostVersion.AuthoredAt DESC
+    """
+)
+
+<p>The <code>IsCurrent</code> field has to be updated for all versions when a new version is accepted for this
+    to work. In most cases, you will probably want fetches to be fast at the expense of slowed inserts.</p>
+
+<h2>Mapping the Workflow to a RESTful Interface</h2>
+
+<p>We need to be careful to keep <code>PUT</code> and <code>DELETE</code> operations idempotent.
+    That means having a user PUT multiple times should not create multiple new versions of a post.
+    Since updating an resource in this workflow is actually creating a new version, API users should not
+    have access to PUT operations except on version meta data. Similarly, <code>DELETE</code> operations should
+    be replaced by a version <code>POST</code> having the new deletion status.</p>
+
+<table class="table table-bordered">
+    <tbody>
+        <tr>
+            <th>Method</th>
+            <th>URI</th>
+            <th>Action</th>
+        </tr>
+        <tr>
+            <td>GET</td>
+            <td>/posts?</td>
+            <td>List only the latest post versions matching query</td>
+        </tr>
+        <tr>
+            <td>POST</td>
+            <td>/posts</td>
+            <td>Create a new post version with a unique PostId</td>
+        </tr>
+        <tr>
+            <td>GET</td>
+            <td>/posts/:id/versions?</td>
+            <td>List all versions for this post matching query</td>
+        </tr>
+        <tr>
+            <td>POST</td>
+            <td>/posts/:id/versions</td>
+            <td>Create a new post version (this is what should be used to submit an update to an item – NOT PUT)</td>
+        </tr>
+        <tr>
+            <td>PUT</td>
+            <td>/posts/:id/versions/:vid</td>
+            <td>Update meta data fields (ReviewStatus, etc...). Should give permission denied (403) if user is not a moderator.</td>
+        </tr>
+        <tr>
+            <td>GET</td>
+            <td>/posts/versions?</td>
+            <td>List all post versions matching search criteria</td>
+        </tr>
+        <tr>
+            <td>POST</td>
+            <td>/posts/versions</td>
+            <td>Create a new post version</td>
+        </tr>
+        <tr>
+            <td>GET</td>
+            <td>/posts/versions/:id</td>
+            <td>Get data for a single post version</td>
+        </tr>
+        <tr>
+            <td>PUT</td>
+            <td>/posts/versions/:id</td>
+            <td>Update meta data fields (ReviewStatus, etc...). Should give permission denied (403) if user is not a moderator.</td>
+        </tr>
+    </tbody>
+</table>
+
+<h3>Examples:</h3>
+
+<p>Fetch all versions of a post made by user "brady":</p>
+
+<pre>GET /posts/3/versions?Author.Username=brady</pre>
+
+<p>Fetch all versions of a particular post made by user "brady":</p>
+
+<pre>GET /posts-versions?PostId=3&amp;Author.Username=brady</pre>
+
+<p>Fetch all post versions reviewed by user "brady" across all posts:</p>
+
+<pre>GET /posts/versions?Author.Username=brady</pre>
+
+<h2>Conclusion</h2>
+
+<p>If you want to add a layer of moderation to your data API in order to open up your database to multiple users,
+    this model and workflow should make things pretty easy. It reduces all "edit" operations to "create version"
+    operations, and enables you to fetch the most recent accepted versions at any time point. I hope this
+    set-up helps you to open your databases up to the masses.</p>
+
+<p>So far this has worked well for me, but I'm sure there could be better ways of doing this kind of thing out
+    there - let me know if you have one!</p>

@@ -1,0 +1,140 @@
+@(projectsMap: Map[String, Project])
+
+@import views.html.helpers.deferredThumb
+
+@main("Projects") {
+    <div class="cover parallax-window" data-parallax="scroll" data-image-src="@routes.Assets.versioned("img/covers/cover-18.jpg")">
+        <div class="cover-contents-wrapper">
+            <div class="cover-contents">
+                <h1><span class="cover-title">Projects</span></h1>
+            </div>
+        </div>
+    </div>
+
+    <div class="container container-lead">
+        <div class="row">
+            <div class="col-md-12">
+
+                <div class="panel">
+                    <div class="panel-heading">
+                        <h3>Reward Hall Recognition Platform</h3>
+                    </div>
+                    <div class="panel-body">
+                        <p>Reward Hall is a platform for creating employee recognition pages that are e-mailed
+                            out to the company. Recognized employees are rewarded digital gift cards for their
+                            achievements.</p>
+
+                        <div class="row">
+                            @deferredThumb("uploads/projects/rewardhall/full.png")
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-heading">
+                        <h3>The Mandala Book</h3>
+                    </div>
+                    <div class="panel-body">
+                        <p>The Mandala Book allows you to create awesome coloring book designs and share them online.
+                            It uses a simple algorithm to repeat shapes that generates very cool designs that anybody
+                            can make.</p>
+
+                        <p><a class="btn btn-lg btn-default" href="https://github.com/bradyo/mandala-book">Browse Code</a></p>
+
+                        <div class="row">
+                            <div class="col-lg-9">
+                                @deferredThumb("uploads/projects/mandala-book/list-designs.png")
+                            </div>
+                            <div class="col-lg-3 portfolio-sidebar">
+                                @deferredThumb("uploads/projects/mandala-book/create-design.png")
+                                @deferredThumb("uploads/projects/mandala-book/create-book.png")
+                                @deferredThumb("uploads/projects/mandala-book/buy-book.png")
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-heading">
+                        <h3>Science of Aging Web</h3>
+                    </div>
+                    <div class="panel-body">
+                        <p>This site is for listing resources available to the community of gerontology researchers.
+                            The user interface allows users to add protocol files, videos, links, events, and articles.
+                            It has an open work flow system that allows non-members to contribute content with
+                            moderator approval.</p>
+
+                        <p><a class="btn btn-default btn-lg" href="http://sageweb.org/">Visit Site</a>
+                            <a class="btn btn-default btn-lg" href="https://github.com/bradyo/sageweb">Browse Code</a></p>
+
+                        <div class="row">
+                            <div class="col-md-9">
+                                @deferredThumb("uploads/projects/sageweb/full.png")
+                            </div>
+                            <div class="col-md-3 portfolio-sidebar">
+                                @deferredThumb("uploads/projects/sageweb/list-papers.png")
+                                @deferredThumb("uploads/projects/sageweb/list-events.png")
+                                @deferredThumb("uploads/projects/sageweb/events-calendar.png")
+                                @deferredThumb("uploads/projects/sageweb/create-link.png")
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-heading">
+                        <h3>Collaborative Research Portal</h3>
+                    </div>
+                    <div class="panel-body">
+                        <p>A collection of research databases and tools for the Aging Research Core Collaboration team
+                            that allows users to search compiled lifespan data across hundreds of lifespan experiments.
+                            Analysis pipelines compile raw experiment data into downloadable reports and plots.</p>
+
+                        <p>
+                            <a class="btn btn-default btn-lg" href="https://github.com/bradyo/RlsMonitor">Browse Monitor Code</a>
+                            <a class="btn btn-default btn-lg" href="https://github.com/bradyo/rls-db-builder">Browse Builder Code</a>
+                            <a class="btn btn-default btn-lg" href="https://github.com/bradyo/YeastRlsDatabase">Browse Web Code</a>
+                        </p>
+
+                        <div class="row">
+                            <div class="col-md-9">
+                                @deferredThumb("uploads/projects/research-portal/search-comparisons.png")
+                                @deferredThumb("uploads/projects/research-portal/show-comparison.png")
+                            </div>
+                            <div class="col-md-3 portfolio-sidebar">
+                                @deferredThumb("uploads/projects/research-portal/list-experiments.png")
+                                @deferredThumb("uploads/projects/research-portal/show-experiment.png")
+                                @deferredThumb("uploads/projects/research-portal/show-cls-comparison.png")
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-heading">
+                        <h3>Lifespan Observation Database</h3>
+                    </div>
+                    <div class="panel-body">
+                        <p>The Lifespan Observation Database collects published lifespan data across multiple species.
+                            This database stores lifespan measurements under various intervention conditions across a
+                            wide range of model organisms.</p>
+
+                        <p><a class="btn btn-default btn-lg" href="http://lifespandb.sageweb.org//">Visit Site</a>
+                            <a class="btn btn-default btn-lg" href="https://github.com/bradyo/LifespanDatabase">Browse Code</a></p>
+
+                        <div class="row">
+                            <div class="col-md-9">
+                                @deferredThumb("uploads/projects/lifespan-database/full.png")
+                            </div>
+                            <div class="col-md-3 portfolio-sidebar">
+                                @deferredThumb("uploads/projects/lifespan-database/search.png")
+                                @deferredThumb("uploads/projects/lifespan-database/observation.png")
+                                @deferredThumb("uploads/projects/lifespan-database/create.png")
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}

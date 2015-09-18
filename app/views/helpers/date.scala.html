@@ -1,0 +1,6 @@
+@import org.joda.time.DateTime
+@import org.joda.time.format.DateTimeFormat
+
+@(when: DateTime)
+
+@{when.toString(DateTimeFormat.forPattern("d MMMM, yyyy"))}

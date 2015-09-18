@@ -1,0 +1,81 @@
+@import routes.Assets.versioned
+@import views.html.helpers.deferredImg
+
+@main("About Me") {
+    <div class="cover parallax-window" data-parallax="scroll" data-image-src="@routes.Assets.versioned("img/covers/cover-14.jpg")">
+        <div class="cover-contents-wrapper">
+            <div class="cover-contents">
+                <h1><span class="cover-title">Brady Olsen</span></h1>
+                <h3 class="cover-publish-date">Software Engineer in the Pacific Northwest</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="container container-lead">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="panel panel-default">
+                    <div class="panel-image">
+                        <img class="img-responsive" src="@versioned("img/about-cover.jpg")" alt="Cover" />
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="panel panel-default">
+                    <div class="panel-heading"><h3>About Me</h3></div>
+                    <div class="panel-body">
+                        <p>I started programming when I was a kid after finding my mom's "Teach Yourself C++ in 21 Days" book
+                            and have been coding ever since.</p>
+                        <p>I studied Biochemistry at the University of Washington
+                            to apply some of my skills on emerging DNA research and technology.</p>
+                        <p>I'm also a dad and a minimalist.</p>
+                    </div>
+                </div>
+                <div class="panel panel-default">
+                    <div class="panel-image hide-panel-body">
+                        @deferredImg("img/about-1.jpg")
+                    </div>
+                </div>
+                <div class="panel panel-default">
+                    <div class="panel-image hide-panel-body">
+                        @deferredImg("img/about-2.jpg")
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="panel panel-default">
+                    <div class="panel-heading"><h3>Contact Me</h3></div>
+                    <div class="panel-body">
+                        <ul>
+                            <li>Name: <strong>Brady Olsen</strong></li>
+                            <li>E-mail: <strong>bradyaolsen@@gmail.com</strong></li>
+                            <li>Skype: <strong>brady.alan.olsen</strong></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="panel panel-default">
+                    <div class="panel-heading"><h3>Around the Web</h3></div>
+                    <div class="panel-body">
+                        <ul>
+                            <li><a href="http://github.com/bradyo">Github</a></li>
+                            <li><a href="http://www.linkedin.com/pub/brady-olsen/1b/aa/a42">LinkedIn</a></li>
+                            <li><a href="http://facebook.com/bradybradybrady">Facebook</a></li>
+                            <li><a href="http://www.goodreads.com/user/show/5109165-brady-olsen">GoodReads</a></li>
+                            <li><a href="http://kaeberleinlab.org/people/brady-olsen">Research</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="panel panel-default">
+                    <div class="panel-image hide-panel-body">
+                        @deferredImg("img/about-3.jpg")
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+}

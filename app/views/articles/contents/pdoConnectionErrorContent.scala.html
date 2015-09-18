@@ -1,0 +1,124 @@
+@import views.html.helpers.phpBlock
+@import org.joda.time.DateTime
+
+@(title: String, publishDate: DateTime, tags: List[String])
+
+<p>I ran into a a problem using PDO for a long running PHP script the other day. I kept getting a
+    "MySQL server went away" exception that would crash my script.</p>
+
+<p>Well I looked up this issue online and found that the PDO connection was timing out and causing statement execution
+    to throw that error:
+    <a href="http://stackoverflow.com/questions/2232150/pdo-mysql-server-has-gone-away">StackOverflow</a></p>
+
+<p>One proposed solution was to catch that exception and attempt to reconnect to the database. But now my problem is
+    that I have abstracted away the database implementation details and am working off an abstract data repository in
+    my script.</p>
+
+<p>So my long running script looks like this:</p>
+
+@phpBlock(
+    """
+    $pdo = new PDO(...connection details...);
+    $repository = new ItemRepository($pdo);
+
+    while (! $terminationRequested) {
+        $item = findNextItem();
+        $repository->save($item);
+
+        // ...delay for some time...
+    }
+    """
+)
+
+<p>And the problem is <code>$repository->save($item)</code> can throw an exception if the MySQL database server
+    "goes away" (in other words times out). One solution is to renew the <code>PDO</code> database connection every
+    loop so that is never times out:</p>
+
+@phpBlock(
+    """
+    while (! $terminationRequested) {
+        $pdo = new PDO(...connection details...);
+        $repository = new ItemRepository($pdo);
+
+        $item = findNextItem();
+        $repository->save($item);
+
+        // ...delay for some time...
+    }
+    """
+)
+
+<p>And that works, but it doesn't feel right - why does my calling code need to be changed in order to accommodate a
+    leaky abstraction? A better solution is to handle the reconnect at the data access layer, inside the
+    <code>Repository</code> class itself. Unfortunately that is not all that simple.</p>
+
+<p>For one, <code>PDO</code> has no option for reconnecting to the database if a connection is lost. It also does not
+    save the connection parameters in the object itself, so you cannot just extend the class and add reconnecting to it.
+    You also can't extend the <code>PDOStatement</code> object <code>PDO</code> returns because it is hard coded into
+    the <code>PDO</code> class. It seems like the best thing you can do is put try/catch blocks everywhere you get a
+    <code>PDOStatement</code>:</p>
+
+@phpBlock(
+    """
+    class ConnectionManager
+    {
+        private $dsn;
+        private $username;
+        private $password;
+        private $options;
+        private $pdo;
+
+        public function __construct($dsn, $username, $password, $options) {
+            $this->dsn = $dsn;
+            $this->username = $username;
+            $this->password = $password;
+            $this->options = $options;
+        }
+
+        public function getConnection() {
+            if ($this->pdo === null) {
+                $this->reconnect();
+            }
+            return $this->pdo;
+        }
+
+        public function reconnect() {
+            $this->pdo = new PDO($this->dsn, $this->username, $this->password,
+                $this->options);
+        }
+    }
+    """
+)
+
+@phpBlock(
+    """
+    class ItemRepository
+    {
+        private $connectionManager;
+
+        public function __construct(ConnectionManager $connectionManager) {
+            $this->connectionManager = $connectionManager;
+        }
+
+        public function save($item) {
+            try {
+                $this->doSave($item);
+            }
+            catch (PDOException $e) {
+                $this->reconnectingPdo->reconnect();
+                $this->doSave($item);
+            }
+        }
+
+        private function doSave($item) {
+            $pdo = $this->connectionManager->getConnection();
+            $stmt = $pdo->prepare(
+                'INSERT INTO items (id, name) VALUES (:id, :name)'
+            );
+            $stmt->bindValue(':id', $item->getId());
+            $stmt->bindValue(':name', $item->getName());
+            $stmt->execute();
+        }
+    }
+     """
+)

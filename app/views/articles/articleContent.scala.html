@@ -1,0 +1,39 @@
+@(article: Article)
+
+@main(article.title) {
+    <div class="cover parallax-window" data-parallax="scroll" data-image-src="@routes.Assets.versioned("img/covers/" + article.coverImage)">
+        <div class="cover-contents-wrapper">
+            <div class="cover-contents">
+                <h1><span class="cover-title">@article.title</span></h1>
+                <div><span class="cover-publish-date">Published: @views.html.helpers.date(article.publishDate)</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container container-lead">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="panel panel-default">
+                    <div class="panel-body panel-body-article">
+                        @article.content
+                    </div>
+                </div>
+
+                <div class="panel panel-default">
+                    <div class="panel-heading"><h3>Comments</h3></div>
+                    <div class="panel-body">
+                        <div id="disqus_thread"></div>
+                        <script type="text/javascript">
+                            var disqus_shortname = 'lucidgene';
+                            (function() {
+                                var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+                                dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+                                (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+                            })();
+                        </script>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}

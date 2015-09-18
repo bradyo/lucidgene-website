@@ -1,0 +1,37 @@
+@import views.html.helpers.date
+@import models.MappedArticle
+
+@(mappedArticles: List[MappedArticle])
+
+@main("Notebook") {
+    @*img/covers/cover-21.jpg*@
+    <div class="cover parallax-window" data-parallax="scroll" data-image-src="@routes.Assets.versioned("img/covers/cover-20.jpg")">
+        <div class="cover-contents-wrapper">
+            <div class="cover-contents">
+                <h1><span class="cover-title">Notebook</span></h1>
+            </div>
+        </div>
+    </div>
+
+    <div class="container container-lead">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="panel">
+                    <div class="panel-heading">
+                        <h3>Articles</h3>
+                    </div>
+                    <div class="panel-body">
+                        <ul class="page-listing">
+                            @for(mappedArticle <- mappedArticles) {
+                                <li>
+                                    <a href="@routes.NotebookController.showArticle(mappedArticle.slug)">@mappedArticle.article.title</a>
+                                    <span class="page-listing-date">- @date(mappedArticle.article.publishDate)</span>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}

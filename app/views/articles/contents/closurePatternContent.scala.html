@@ -1,0 +1,141 @@
+@import views.html.helpers.scalaBlock
+@import views.html.helpers.phpBlock
+@import org.joda.time.DateTime
+
+@(title: String, publishDate: DateTime, tags: List[String])
+
+<p>A closure is a function instance that takes variables from the current scope.</p>
+
+@phpBlock(
+    """
+    $a = 3;
+    $b = 4;
+    $f = function() use ($a, $b) {
+        return $a + $b;
+    }
+    $c = $f(); // now c = 7
+    """
+)
+
+<p>These higher order functions can be used to abstract your code at a higher level, especially where you have some
+    common wrapper code around some more specific code. Two good examples where closures can be used to cut boilerplate
+    code are caching and database transactions.</p>
+
+<h2>Database Transaction Closure</h2>
+
+<p>To execute a set of queries in a transaction, you typically have to wrap your in some transaction code to explicitly
+    commit the transaction on success or rollback the transaction on failure.</p>
+
+@phpBlock(
+    """
+    $database->beginTransaction();
+    try {
+        $user1->cash -= 100;
+        $user2->cash += 100;
+        $userRepository->persist($user1);
+        $userRepository->persist($user2);
+        $database->commit();
+    } catch (Exception $e) {
+        $database->rollback();
+    }
+""")
+
+<p>You can abstract out all the transaction related code into a higher order function like so:</p>
+
+@phpBlock(
+    """
+    class Database
+    {
+        // higher order function decorates some other function with database transaction code
+        public function transactional(callable $function)
+        {
+            $this->beginTransaction();
+            try {
+                $function();
+                $this->commit();
+            } catch (Exception $e) {
+                $this->rollback();
+            }
+        }
+    }
+
+    // give the higher order function a closure to execute inside transaction
+    $database->transactional(function () use ($userRepository, $user1, $user2) {
+        $user1->cash -= 100;
+        $user2->cash += 100;
+        $userRepository->persist($user1);
+        $userRepository->persist($user2);
+    });
+    """
+)
+
+<p>Now you have all the transaction code separate from the query code (no longer repeated across your code base).</p>
+
+<h2>Cache Closure</h2>
+
+<p>Typical cache handling code for getting a User object from a UserRepository by user ID looks like the following:</p>
+
+@phpBlock(
+    """
+    // get value from cache if it exists, otherwise create it and save in cache for later
+    $cacheKey = 'user';
+    if ($cache->contains($cacheKey)) {
+        $user = $cache->get($cacheKey);
+    } else {
+        $user = $userRepository->get($userId); // important code
+        $this->set($cacheKey, $user);
+    }
+    """
+)
+
+<p>Like the transactional code example above, this caching code can be abstracted into a higher order function that
+    takes a closure for generating the value to be cached.</p>
+
+
+@phpBlock(
+    """
+    class ClosureCache extends ArrayCache
+    {
+        /**
+         * Gets the value from the cache for key, otherwise creates and stores the value
+         *
+         * @param string $key cache key
+         * @param callable $createFunction function to generate and store value for if not in cache
+         */
+        public function getOrElse($key, callable $createFunction)
+        {
+            if ($this->contains($key)) {
+                return $this->get($key);
+            } else {
+                $value = $createFunction();
+                $this->set($key, $value);
+                return $value;
+            }
+        }
+    }
+
+    // get the user from cache by giving closure to compute value
+    $user = $cache->getOrElse('user', function () use ($userRepository, $userId) {
+        return $userRepository->get($userId);
+    });
+    """
+)
+
+<h2>Binding Closure Params</h2>
+
+<p>Closures were added to PHP in version 5.3 and still have a few limitations. Variables in the current scope have to
+    be explicitly passed to closures with the <code>use</code> directive. To compare that with a language that
+    implicitly binds all variables in the current scope to closures, you can do the following in Scala:</p>
+
+@scalaBlock(
+    """
+    val user = cache.getOrElse("user", userRepository.get(userId))
+    """
+)
+
+<p>As a result, the Scala code has essentially no boilerplate hiding the intent of your code.</p>
+
+<h2>Summary</h2>
+
+<p>Closures are a nice new addition to PHP and can greatly simplify repetitive boilerplate code as the two real-world
+    examples demonstrate. Hopefully the next generation of libraries will make good use of this feature.</p>

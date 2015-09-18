@@ -1,0 +1,212 @@
+@import views.html.helpers.phpBlock
+@import org.joda.time.DateTime
+
+@(title: String, publishDate: DateTime, tags: List[String])
+
+<h2>Introduction</h2>
+
+<p>A lot of buzz is going on around Inversion of Control (IoC) patterns these days. IoC patterns separate object
+    construction from business logic to create testable "seams" in your code (see
+    <a title="Clean Code Talks - Unit Testing" href="http://youtu.be/wEhu57pih5w">Misko Hevery's Unit Testing Talk</a>).</p>
+
+<p>Unfortunately there is not yet a tried and tested methodology for IoC practices. Commonly used methods include
+    Dependency Injection (DI) and Dependency Injection Container (DIC) / Service Locator (SL). This post summarizes
+    some of the good an bad points for each method and proposes a way to use a class specific DIC to resolve some
+    of the problems with generic DIC.</p>
+
+<h2>Using Dependency Injection (DI)</h2>
+
+<p>The standard way to do DI is to pass your dependencies into your class with either constructor arguments or setter
+    methods. An external agent (the injector) is responsible for constructing the required objects and giving them to
+    your object.</p>
+
+<p>A good practice is to use constructor arguments for required dependencies and setters for optional dependencies.</p>
+
+<h3>The Good</h3>
+<ul>
+    <li>
+        <strong>Dependencies are explicit.</strong> This means programmers do not have to guess which dependencies
+        are available in the class. Your IDE also knows which dependencies are available and can provide auto-complete.
+    </li>
+</ul>
+
+<h3>The Bad</h3>
+
+<ul>
+    <li>
+        <strong>DI does not allow lazy loading of services.</strong> Some classes might require a dependency for only
+        one method. Using DI means that all the dependencies must be instantiated and injected into your object,
+        even if some are never used. A good example of this is a Controller object that requires a
+        <code>MailService</code> object for just one action.
+    </li>
+    <li>
+        <strong>Classes with many dependencies have long constructors.</strong> Keeping track of the argument order
+        becomes a nightmare when you have more than a few arguments.
+    </li>
+    <li>
+        <strong>Setters expose internal behavior.</strong> If you need to call a setter after creating an object
+        for it to work properly, you are creating a leaky implementation - users of your object need to know how
+        the object works to keep from breaking it. This creates a temporal coupling between the implementation and
+        the consumer.
+    </li>
+</ul>
+
+<h2>Dependency Injection Container (DIC)</h2>
+
+<h3>The Good</h3>
+
+<ul>
+    <li>
+        <strong>Dependencies can be loaded on demand.</strong> DIC containers can instantiate a dependency
+        (and all sub-dependencies) the first time a consumer asks for it. This is a major benefit of using a DIC
+        over DI.
+    </li>
+</ul>
+
+<h3>The Bad</h3>
+<ul>
+    <li>
+        <strong>Dependencies are hidden. </strong>Instead of your class depending on multiple other objects,
+        it now depends on just the container object. This is bad in two ways: 1) programmers do not know
+        dependencies except by looking at implementation, and 2) the IDE does not know dependencies and cannot
+        provide auto-complete.
+    </li>
+    <li>
+        <strong>Class implementation must be aware of DIC.</strong> In order to take advantage of lazy loading
+        of dependencies, the class must use the DIC internally to load services in the container. This might not
+        be such a bad thing if you consider the DIC as a Service Loading Service, then just use it like any other
+        service in your code.
+    </li>
+</ul>
+
+<h2>Using Class Specific Dependency Injection Container (DIC) to Make Dependencies Explicit</h2>
+
+<p>Here propose a solution that to create a class specific DIC container when a DIC container is needed (such as
+    when you want lazy loading for dependencies). The basic idea is to create a class specific DIC and inject it
+    via the constructor. Any dependencies that do not require lazy loading should be injected into the constructor
+    directly, all others should be managed by the DIC container.</p>
+
+<p>For simplicity purposes, you could create your DIC as proxies to a application global DIC container so you can
+    have one configuration for your whole application.</p>
+
+<p>The following code demonstrates how to set it up. It is an example written in PHP using the Symfony2 Dependency
+    Injection Components.</p>
+
+<h3>Example Data Importer with Complex Dependencies</h3>
+
+@phpBlock(
+    """
+    class Importer
+    {
+        private $serviceContainer;
+        private $samples;
+
+        /**
+         * @param ImporterServiceContainer $serviceContainer
+         */
+        public function __construct($serviceContainer) {
+            $this-&gt;serviceContainer = $serviceContainer;
+            $this-&gt;samples = array();
+        }
+
+        /**
+         * Imports an data from an experiment file, skipping data not allowed by filter.
+         *
+         * @param Filter $filter Filter for importing only desired data
+         * @param string $filePath Experiment file to import
+         */
+        public function import($filter, $filePath) {
+            // Process each combined row and build up samples
+            $experimentFile = new ExperimentFile($filePath);
+            $combinedRows = $experimentFile-&gt;getCombinedRows();
+            foreach ($combinedRows as $combinedRow) {
+                // Skip combined row if it doesn't pass filter criteria
+                if ( ! $filter-&gt;isAllowed($combinedRows)) {
+                    continue;
+                }
+
+                // Get citation data
+                $pubmedId = $combinedRow-&gt;getPubmedId();
+                $citationService = $this-&gt;serviceContainer-&gt;getCitationService();
+                $citation = $strainService-&gt;findByPubmedId($pubmedId);
+
+                // Get set strain data
+                $strainName = $combinedRow-&gt;getStrainName();
+                $strainService = $this-&gt;serviceContainer-&gt;getStrainService();
+                $strain = $strainService-&gt;findByStrainName($strainName);
+
+                // Build up a new sample
+                $sample = new Sample();
+
+                // Complex process for creating an new Sample object omitted for brevity
+                // ...
+
+                $sampleService = $this-&gt;serviceContainer-&gt;getSampleService();
+                $sampleService-&gt;save($sample);
+
+                // Store new sample
+                $this-&gt;samples[] = $sample;
+            }
+        }
+    }
+    """
+)
+
+<h3>Service Container Proxy</h3>
+
+@phpBlock(
+    """
+    use Symfony\Component\DependencyInjection\ContainerInterface;
+
+    class ImporterServiceContainer
+    {
+        /**
+         * @param ContainerInterface $container Service container to proxy
+         */
+        public function __construct($container) {
+            $this-&gt;container = $container;
+        }
+
+        /**
+         * @return CitationService
+         */
+        public function getCitationService() {
+            return $this-&gt;container-&gt;get('citation_service');
+        }
+
+        /**
+         * @return GeneService
+         */
+        public function getGeneService() {
+            return $this-&gt;container-&gt;get('gene_service');
+        }
+
+        /**
+         * @return SampleService
+         */
+        public function getSampleService() {
+            return $this-&gt;container-&gt;get('sample_service');
+        }
+    }
+    """
+)
+
+<h3>Explanation of Code</h3>
+
+<p>We have a class that depends on many services, but we don't want to inject all dependencies into the constructor
+    since there are cases where services may never need to be initialized (for example, if the filter skips all
+    rows in the imported file).</p>
+
+<p>To handle these cases, we need to inject a DIC to resolve these dependencies only when needed. Typically,
+    injecting a global DIC would hide the dependencies our class needs, so we have created a class specific DIC to
+    make these dependencies more explicit. In this case it is a proxy to a global ContainerInterface object, but you
+    could also have made <code>ImporterServiceContainer</code> implement <code>ContainerInterface</code> directly.
+
+<h2>Conclusions</h2>
+
+<p>A DIC is a powerful way to handle object dependency constructions, but can hide dependencies and couple your
+    classes to DI frameworks. If you do not need the functionality DICs provide (such as lazy loading services),
+    it is better to keep your objects separate from DI framework code with constructor or setter injection points.</p>
+
+<p>When you need more dynamic construction, your should create a custom DIC that exposes only the services
+    required by your class instead of using a generic one</p>

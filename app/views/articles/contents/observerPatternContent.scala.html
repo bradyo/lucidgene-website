@@ -1,0 +1,31 @@
+@import org.joda.time.DateTime
+
+@(title: String, publishDate: DateTime, tags: List[String])
+
+<p>Ever move to a new place and try to remember all the places you've given your mailing address to so you can notify
+    them about your new address? This happened to me recently and I found a pretty good solution to this problem
+    originating from software engineering design patterns, particularly the Observer Pattern.</p>
+
+<p>In the Observer Pattern, an Subject keeps track of a collection of Observers that it can notify when it's state
+    changes. Observers register themselves with the Subject, indicating that they want to be notified when the
+    Subject changes state. Then any time the Subject changes state, it will go through and notify all registered
+    Observers.</p>
+
+<div class="thumbnail">
+    <img src="http://sourcemaking.com/files/sm/images/patterns/Observer.gif" alt="Observer scheme" />
+    <div class="caption">
+        Image Source: <a href="http://sourcemaking.com/design_patterns/observer">sourcemaking.com</a>
+    </div>
+</div>
+
+<p>It might seem obvious, but keeping track of a list of people and places you have given your mailing address so that
+    you can notify them when they need to update their records is applying the Observer Pattern outside of the
+    programming world.</p>
+
+<p>To apply this pattern, create a text document named “mailing-address-observers.txt” and save it. Now any time you
+    give your mailing address out (for example, to a magazine subscription, a bank, an insurance company, or your
+    Grandma over the phone), make sure to register the observer by adding them to your observer list.</p>
+
+<p>Now that you have a list of registered observers, any time you move you don't need to worry about who the hell
+    has your old mailing address and how many packages are being sent to your old address. Just loop over your
+    observers document and notify each one of your new address.</p>

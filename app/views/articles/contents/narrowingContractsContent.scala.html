@@ -1,0 +1,162 @@
+@import org.joda.time.DateTime
+@import views.html.helpers.phpBlock
+
+@(title: String, publishDate: DateTime, tags: List[String])
+
+<h2>Example for EntityManager</h2>
+
+<p>An entity manager usually provides a generic API for persistence of Entity classes in an efficient way using
+    a Unit of Work to track all the changes and minimize trips to the database. The EntityManager provides a very
+    broad contract for getting specific EntityRepository objects from the manager.</p>
+
+@phpBlock(
+    """
+    public class UserRepository extends EntityRepository
+    {
+        /**
+         * @param string $type
+         * @return User[]
+         */
+        public function findByType($userType)
+        {
+            return $this->findBy(['type' => $type]);
+        }
+    }
+    """
+)
+
+@phpBlock(
+    """
+    $entityManager = new EntityManager(/* ... */);
+    $repository = $entityManager->getRepository('User');
+    /* @var $repository UserRepository */
+    $users = $repository->findByType(UserType::ACTIVE);
+    """
+)
+
+<p>Above, <code>$repository</code> is actually an <code>EntityRepository</code> instance, not a <code>UserRepository</code>.
+    Because PHP has no way to cast the generic type to the actual type, developers need to explicitly type-hint using
+    doc comments.</p>
+
+<p>Other languages can do this:</p>
+
+@phpBlock("$repository = (UserRepository) $entityManager->getRepository('User');")
+
+<p>However, there is no way to guarantee <code>$repository</code> is the right kind of object and is not null without
+    a lot of boiler-plate code. Also, how the developer know the <code>$entityManager</code> even contains a repository
+    class for <code>User</code>?
+
+<p>You can improve this code a bit and reduce the cognitive load on the developers using it by wrapping your generic
+    object in something more explicit:</p>
+
+@phpBlock(
+    """
+    public class ProjectRepositoryManager
+    {
+        private $entityManager;
+
+        public function __construct(EntityManager $entityManager)
+        {
+            $this->entityManager = $entityManager;
+        }
+
+        /**
+         * @return UserRepository
+         */
+        public function getUserRepository()
+        {
+            return $this->entityManager->getRepository('User');
+        }
+
+        /**
+         * @return PostRepository
+         */
+        public function getPostRepository()
+        {
+            return $this->entityManager->getRepository('Post');
+        }
+    }
+    """
+)
+
+@phpBlock(
+    """
+    $repositoryManager = new ProjectRepositoryManager(new EntityManager(/* ... */));
+    $repository = $repositoryManager->getUserRepository();
+    $users = $repository->findByType(UserType::ACTIVE);
+    """
+)
+
+<h2>Example for Service Containers</h2>
+
+<p>This example shows how to wrap a commonly used service container (dependency injection container) with a typed
+    object.</p>
+
+<p>Service containers are usually implemented as simple hash maps between a unique service name and an generic object
+    or anonymous function that creates the object. When consuming services from a container, you won't automatically
+    know what names the service was given or what type of object it returns.</p>
+
+@phpBlock(
+    """
+    $container = new Container();
+    $container->set('entityManager', new ProjectEntityManager());
+    $container->set('userRepository', function () use ($container) {
+        return $container['entityManager'];
+    });
+    """
+)
+
+@phpBlock(
+    """
+    $repository = $container->get('userRepository');
+    /* @var $repository UserRepository */
+    $users = $repository->findByType(UserType::ACTIVE);
+    """
+)
+
+<p>To reduce the cognitive load on the developer and make the services explicit, you can wrap your service container
+    in a project specific container:</p>
+
+@phpBlock(
+    """
+    class ProjectContainer
+    {
+        private $container;
+
+        public function __construct()
+        {
+            $container = new Container();
+            $container->set('entityManager', new ProjectEntityManager());
+            $container->set('userRepository', function () use ($container) {
+                return $container['entityManager'];
+            });
+            $this->container = $container;
+        }
+
+        /**
+         * @return EntityManager
+         */
+        public function getEntityManager()
+        {
+            return $this->container->get('entityManager');
+        }
+
+        /**
+         * @return UserRepository
+         */
+        public function getUserRepository()
+        {
+            return $this->container->get('userRepository');
+        }
+    }
+    """
+)
+
+@phpBlock(
+    """
+    $container = new ProjectContainer();
+    $repository = $container->getUserRepository();
+    $users = $repository->findByType(UserType::ACTIVE);
+    """
+)
+

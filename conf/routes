@@ -1,9 +1,5 @@
-# Routes
-# This file defines all application routes (Higher priority routes first)
-# ~~~~
-
-# Home page
-GET     /                           controllers.Application.index
-
-# Map static resources from the /public folder to the /assets URL path
-GET     /assets/*file               controllers.Assets.versioned(path="/public", file: Asset)
+GET        /about                 controllers.DefaultController.about
+GET        /notebook              controllers.NotebookController.index
+GET        /articles/:name        controllers.NotebookController.showArticle(name: String)
+GET        /projects              controllers.ProjectController.index
+GET        /assets/*file          controllers.Assets.versioned(path="/public", file: Asset)

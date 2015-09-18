@@ -1,0 +1,156 @@
+@import views.html.helpers.phpBlock
+@import org.joda.time.DateTime
+
+@(title: String, publishDate: DateTime, tags: List[String])
+
+<h2>Introduction</h2>
+
+<p>Since PHP 5.3 namespaces were introduced, I've noticed in a lot of class names being a lot shorter than they
+    should be. For example, I keep seeing stuff like the this in code:</p>
+
+@phpBlock(
+    """
+    $service = new Email();
+    """
+)
+
+<p>Most people will ask themselves if the Email class is actually a service and have to check the namespace
+    statement to know for sure. Ambiguity in class names makes code harder to read, and harder write.</p>
+
+<p>In this post, I'll attempt to:</p>
+
+<ul>
+    <li>Demonstrate the problem in Symfony2, Zend Framework 2 (ZF2), and typical user code (application services).</li>
+    <li>Show how you can use class aliases to fix 3rd party class names.</li>
+    <li>Show how library developers can create better names for their standard classes.</li>
+</ul>
+
+
+<p>In the Symfony2 framework, classes in the validator component are named as stubs off the containing namespace.
+    You can see that individual validator classes are named after what they validate, i.e.
+    <code>Email</code>, <code>Url</code>, <code>Regex</code> etc... The problem is, you can not tell what a class
+    actually is without referring to the namespace the class in is, in this case <code>Validator</code> namespace.</p>
+
+@phpBlock(
+    """
+    use Symfony\Component\Validator\Constraints\Email;
+
+    $email = new Email();
+    $email->message = 'Invalid email address';
+    """
+)
+
+<p>Now imagine if we follow this convention for any class handling e-mails in different namespaces, for example:</p>
+
+@phpBlock(
+    """
+    use Symfony\Components\Validator\Constraints\Email;
+    use Application\Service\Email;
+
+    $myEmail = 'brady@localhost';
+    $constraint = new Email();
+    $errors = $constraint->validate($myEmail);
+    if (count($errors) === 0) {
+        $service = new Email();
+        $service->sendWelcomeMessage($myEmail);
+    }
+    """
+)
+
+<p>Notice have a class naming conflict that has to be resolved manually because both namespaces use this sort of
+    naming convention. The problem emerges because neither class actually defines "e-mail" object, even though
+    they are named as if they did - one defines an "Email Constraint" object, the other an "Email Service" object.</p>
+
+<p>To fix this problem, we can manually alias class names within the file as so:</p>
+
+@phpBlock(
+    """
+    use Symfony\Components\Validator\Constraints\Email as EmailConstraint;
+    use Application\Service\Email as EmailService;
+
+    $myEmail = 'brady@localhost';
+    $constraint = new EmailConstraint();
+    $errors = $constraint->validate($myEmail);
+    if (count($errors) === 0) {
+        $service = new EmailService();
+        $service->sendWelcomeMessage($myEmail);
+    }
+    """
+)
+
+<p>Fixing the problem in this way is not ideal since every file could potentially have different class aliases for
+    the same classes - we lose the benefit of having standardized names for framework code in our projects.
+    Instead, library developers should start naming classes based on what the class actually represents,
+    independently of the class namespace.</p>
+
+<p>Classes named in such a way produce clean and conflict free (for the most part) code:</p>
+
+@phpBlock(
+"""
+    use Symfony\Components\Validator\Constraints\EmailConstraint;
+    use Application\Service\EmailService;
+
+    $myEmail = 'brady@localhost';
+    $constraint = new EmailConstraint();
+    $errors = $constraint->validate($myEmail);
+    if (count($errors) === 0) {
+        $service = new EmailService();
+        $service->sendWelcomeMessage($myEmail);
+    }
+    """
+)
+
+<p>The code becomes much more readable and has minimal naming conflicts across namespaces.</p>
+
+<h2>Example from Zend Framework 2 (ZF2)</h2>
+
+<p>I don't want to single out the Symfony2 framework (granted it's a pretty awesome framework). You see this naming
+    practice popping up around everywhere, even in the new Zend Framework, which supports PHP 5.3 namespaces:</p>
+
+@phpBlock(
+    """
+    use Zend\Validator\EmailAddress;
+    $myEmail = 'brady@localhost';
+    $validator = new EmailAddress();
+    """
+)
+
+<p>This code could be better written as:</p>
+
+@phpBlock(
+    """
+    use Zend\Validator\EmailAddressValidator;
+    $validator = new EmailAddressValidator();
+    $isValid = $validator->isValid('brady@localhost');
+    """
+)
+
+<p>I think this practice arose from when PHP didn't have namespaces, and class names always contained namespaces.
+    People writing <code>Zend_Validator_Date</code> pretty naturally converted that into <code>Zend\Validator\Date</code>
+    for PHP 5.3. Unfortunately, now I think we should really be writing <code>Zend\Validator\DateValidator</code>.</p>
+
+<h2>Won't this Lead to Overly Verbose Code?</h2>
+
+<p>Maybe, but in most cases I think longer names are a good trade-off for reduced ambiguity. Library developers
+    should err on the side of having longer, more meaningful class names, letting users alias them in their
+    code if they need to shorten things for readability.</p>
+
+<h2>Conclusions</h2>
+
+<p>Classes names should be independent of namespace and should reflect what the class actually is:</p>
+
+<ul>
+    <li>
+        <code>Symfony\Component\Validator\Constraints\Email</code> should be
+        <code>Symfony\Component\Validator\Constraints\EmailConstraint</code>
+    </li>
+    <li>
+        <code>Zend\Validator\Email</code> should be <code>Zend\Validator\EmailValidator</code>
+    </li>
+    <li>
+        <code>Application\Service\Mail</code> should be <code>Application\Service\MailService</code>
+    </li>
+</ul>
+
+<p>Naming classes in this way increase code readability and minimize class name conflicts across namespaces.
+What does everybody think?</p>

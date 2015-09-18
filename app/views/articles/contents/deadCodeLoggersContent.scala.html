@@ -1,0 +1,39 @@
+@import views.html.helpers.phpBlock
+@import org.joda.time.DateTime
+
+@(title: String, publishDate: DateTime, tags: List[String])
+
+<p>Many times when working with large web applications that expose web APIs to third party consumers, it is hard to
+    tell what code might still be called from the client applications. A simple solution is to use loggers to track
+    execution of specific blocks of code.</p>
+
+<p>Let's say you have a RESTful controller in your code that handles posting new orders, but that API has been replaced
+    by a new endpoint elsewhere and you want to make sure all clients get updated to use the new endpoint. At some
+    point you'll want to make sure nobody is calling the old endpoint so that you can safely delete it without breaking
+    clients. You can insert some logging code at the beginning of the endpoint controller like so:</p>
+
+@phpBlock(
+    """
+    public function postOrder(Request $request, Logger $logger)
+    {
+        $app->getHitLogger()->log('postOrder() called by user ' . $app->getUser()->getId());
+
+        // Run code? or is dead?...
+    }
+    """
+)
+
+<p>Now we can leave this logging code in production for some time frame to see if the action is ever called. If is is
+    the case that is this a deprecated API function, we may want to include the user identifying information so that we
+    can notify them that they should upgrade their client code to a new endpoint.</p>
+
+<p>If after the designated time frame (say, 1 month) there are no log entries recorded, we can safely delete the whole
+    function and associated unit tests.</p>
+
+<p>For complex systems, the same approach can be used to identify internal API calls that are no longer being used
+    within the system. Depending on the language you are coding in, you might also be able to just run a code analysis
+    tool that checks all paths through the code for functions called, but they don't necessarily catch calls in the
+    code that are never reached.</p>
+
+<p>Just be careful not to over-apply this technique and delete some block of code that might only be called under
+    rare conditions =)</p>

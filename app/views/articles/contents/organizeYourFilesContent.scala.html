@@ -1,0 +1,136 @@
+@import org.joda.time.DateTime
+
+@(title: String, publishDate: DateTime, tags: List[String])
+
+<p>This post shows how I organize the files on my computer. I have used this organization for a while now and it works great for a huge collection of files.</p>
+<p>The basic idea is to break your files into 3 folders: “<strong>work</strong>”, “<strong>personal</strong>”, and “<strong>resources</strong>
+    ”. Then keep the depth of sub-folders to a minimum by flattening out unnecessary hierarchies.</p>
+<h2><strong>work/</strong> – folder for work related documents</h2>
+<ul>
+    <li><strong>backups/ </strong>– place for backup archives
+        <ul>
+            <li>YYYY-MM-DD_system-1.zip</li>
+            <li>YYYY-MM-DD_system-2.zip</li>
+            <li>etc…</li>
+        </ul>
+    </li>
+    <li><strong>data/</strong>– place for raw data files, like database downloads (gene databases), large data sets, etc…
+        <ul>
+            <li><strong>data-set-1/</strong></li>
+            <li><strong>data-set-2/</strong></li>
+            <li>etc…</li>
+        </ul>
+    </li>
+    <li><strong>documents/</strong>– stash for personal work related documents, any of these folders can be moved into the top level for easy access
+        <ul>
+            <li><strong>contracts/</strong> – official contracts you are working on</li>
+            <li><strong>drafts/</strong> – working drafts of papers you are working on</li>
+            <li><strong>meetings/</strong> – meeting presentation files</li>
+            <li><strong>notes/ </strong>
+                – files for random notes and ideas, might also be data files from note-taking software</li>
+            <li><strong>orders/</strong> – receipts for company orders you made</li>
+            <li><strong>proposals/</strong> – official proposals you have submitted for future reference</li>
+            <li><strong>publications/</strong> – publications you have authored for future reference</li>
+            <li>etc…</li>
+        </ul>
+    </li>
+    <li><strong>projects/</strong>– place for all current projects, most of these folders should be under version control
+        <ul>
+            <li><strong>project1/</strong></li>
+            <li><strong>project2/</strong></li>
+            <li><strong>for-client1/</strong>
+                <ul>
+                    <li><strong>project1/</strong></li>
+                    <li><strong>project2/</strong></li>
+                    <li><strong>shared-resources/</strong></li>
+                </ul>
+            </li>
+            <li><strong>for-client2/</strong>
+                <ul>
+                    <li><strong>project1/</strong></li>
+                    <li><strong>project2/</strong></li>
+                </ul>
+            </li>
+            <li>etc…</li>
+        </ul>
+    </li>
+    <li><strong>projects.archive/ </strong>– place for projects you are no longer working on
+        <ul>
+            <li><strong>project3/</strong></li>
+            <li><strong>project4/</strong></li>
+            <li>etc…</li>
+        </ul>
+    </li>
+    <li><strong>temporary/</strong> – throw random crap you plan to throw away or move later</li>
+    <li><strong>tasks.xls</strong>
+        – ongoing to-do list… keep it simple with columns for “project”, “task”, “target date”, “due date”</li>
+</ul>
+<h2><strong>personal/</strong> – folder for personal (non-work related documents that you have created)</h2>
+<ul>
+    <li><strong>art/ </strong>– art you have created</li>
+    <li><strong><strong>contracts</strong>/</strong>
+        – digital contracts for things like insurance policies, retirement plans, etc…</li>
+    <li><strong>photos/ </strong>– photos of friends and family organized however you like (i.e. by year)</li>
+    <li><strong>projects/</strong>– place for all current personal projects, most of these folders should be under version control
+        <ul>
+            <li><strong>project1/</strong></li>
+            <li><strong>project2/</strong></li>
+            <li>etc…</li>
+        </ul>
+    </li>
+    <li><strong>projects.archive/</strong> – place for personal projects you are no longer working on</li>
+    <li><strong>secrets/</strong> – private information like passwords you can’t remember (encrypt these files)</li>
+    <li><strong>homework/ </strong>– all your homework files
+        <ul>
+            <li><strong>PHIL301/</strong></li>
+            <li><strong>CSE499/</strong></li>
+            <li><strong>etc…</strong></li>
+        </ul>
+    </li>
+    <li><strong>essays/ </strong>– general essays you have written</li>
+    <li>etc…</li>
+    <li><strong>tasks.xls</strong>
+        – ongoing to-do list or bucket list. If you use something like David Allen’s Getting Things Done (GTD) method, create separate worksheets for different “buckets” like “deferred tasks”, “someday tasks”, etc… and use columns for “next-action” and “context”</li>
+    <li><strong>to-watch.doc</strong> – movies or shows you want to watch</li>
+    <li><strong>to-read.doc</strong> – books you want to read</li>
+    <li><strong>ideas.doc</strong> – place to dump ideas for future projects</li>
+</ul>
+<h2><strong>resources/</strong> – folder for external resources (things not created by you)</h2>
+<ul>
+    <li><strong>readings/</strong>– pdf documents you have downloaded for reading
+        <ul>
+            <li><strong>to-read/ </strong>– high priority documents to read</li>
+            <li><strong>to-print/</strong> – documents you want to print later</li>
+            <li><strong>reference/</strong> – reference documents</li>
+            <li><strong>cheat-sheets/</strong> – cheat sheets</li>
+        </ul>
+    </li>
+    <li><strong>icons/</strong> – icon libraries you have downloaded, copy into projects as needed</li>
+    <li><strong>images/ </strong>– images you have downloaded
+        <ul>
+            <li><strong>comics/</strong></li>
+            <li><strong>figures/</strong></li>
+            <li>etc…</li>
+        </ul>
+    </li>
+    <li><strong>libraries/</strong>
+        – code libraries you have downloaded, copy into projects as needed (copy instead of symlink to keep dependencies localized to projects)</li>
+    <li><strong>music/ </strong>– music you like to listen to</li>
+    <li><strong>textures/</strong> – background texture images, copy into projects as needed<strong></strong></li>
+    <li><strong>movies/</strong> – movies you have illegally downloaded</li>
+    <li><strong>wallpapers/ </strong>– motivational desktop wallpapers
+        <ul>
+            <li><strong>1680×1050/</strong> – sub-directories for each resolution you need</li>
+            <li>etc…</li>
+        </ul>
+    </li>
+</ul>
+<p>If you work for multiple companies you can create separate work folders like “work.kaeberlein-lab” and “work.consulting”.</p>
+<p>The “<strong>personal</strong>” folder is separated from “<strong>resources</strong>” folder and contains only things you have created. Most systems like to mash them together into a “My Document’s” folder, but I like to keep them separate for the following reasons:</p>
+<ul>
+    <li>You can backup all your personal documents separately or put it under version control without needing to track all the videos or music you have collected.</li>
+    <li>You can use dropbox for “<strong>personal</strong>” folder (which is server-side encrypted) and a non-encrypted cloud service like Ubuntu One for “<strong>resources</strong>
+        ”.</li>
+</ul>
+<p>I keep “<strong>personal</strong>” separate from “<strong>work</strong>” so they can managed individually (sharing and backup). If each are folders in a cloud service, you can make your “<strong>work</strong>
+    ” folders available at home, but keep your “<strong>personal</strong>” folder off your work computer.</p>

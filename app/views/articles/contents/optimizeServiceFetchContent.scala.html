@@ -1,0 +1,104 @@
+@import views.html.helpers.phpBlock
+@import org.joda.time.DateTime
+
+@(title: String, publishDate: DateTime, tags: List[String])
+
+<h2>Before Optimization</h2>
+
+<p>Here we loop over rows of data and use a normalization service to normalize some data from each row:</p>
+
+@phpBlock(
+    """
+    foreach ($rows as $row) {
+        $normalizedValue = $service->normalize($row->getValue());
+
+        // do stuff...
+    }
+    """
+)
+
+<p>The code looks great and is easy to understand, but there is a problem lurking. What if the <code>normalize()</code>
+    method needs to fetch data from a database in order to normalize the values. An example might be normalizing a
+    gene name and having to search a database to see if the name given is just an alias for the official gene name.
+    It can be quite expensive querying the database for each call to <code>normalize()</code> and to optimize this
+    block of code we need to pre-fetch the normalized values for all rows before the loop.</p>
+
+<p>This problem comes up a lot when an ORM layer abstracts away the database leading to extremely inefficient
+    code like this:</p>
+
+@phpBlock(
+    """
+    $articles = $orm->query('SELECT a.* FROM Articles a');
+    foreach ($articles as $article) {
+        $comments = $article->getComments();
+
+        // do stuff...
+    }
+    """
+)
+
+<p>Most ORMs solve this problem by allowing pre-fetching in the query:</p>
+
+@phpBlock(
+    """
+    // join pre-fetches all the comments
+    $articles = $orm->query('SELECT a.* FROM Articles a LEFT JOIN a.Comments c');
+    foreach ($articles as $article) {
+        $comments = $article->getComments();
+
+        // do stuff...
+    }
+    """
+)
+
+<p>But if we are just trying to enrich some data with another source or merge two data sources using services,
+    our sources might not have explicit relationships defined.</p>
+
+<h2>Pre-fetching Values before Loop</h2>
+
+<p>Here we get all the normalized values from the service in one call, then use the results in the loop.</p>
+
+@phpBlock(
+    """
+    // pre-fetch all the normalized values as an array
+    $values = array();
+    foreach ($rows as $row) {
+        $values[] = $row->getValue();
+    }
+    $normalizedValues = $service->normalizeAll($values);
+
+    foreach ($rows as $row) {
+        $normalizedValue = $normalizedValues[$row->getValue()];
+
+        // do stuff...
+    }
+    """
+)
+
+<h2>Pre-fetching Values in Service Layer</h2>
+
+<p>Here we tell the normalization service to pre-load all the values we are going to use call <code>normalize()</code>
+    in the same way we would without this optimization:</p>
+
+@phpBlock(
+    """
+    // get normalized values as an array indexed by row id
+    $values = array();
+    foreach ($rows as $row) {
+        $values[] = $row->getValue();
+    }
+    $service->cacheNormalizedValues($values);
+
+    foreach ($rows as $row) {
+        $normalizedValue = $service->normalize($row->getValue());
+
+        // do stuff...
+    }
+
+    $service->clearNormalizedValues();
+    """
+)
+
+<h2>Conclusion</h2>
+
+<p>Either approach leaves pretty readable code, although optimizations will always make things more complex.</p>

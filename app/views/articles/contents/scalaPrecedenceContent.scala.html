@@ -1,0 +1,49 @@
+@import views.html.helpers.scalaBlock
+@import org.joda.time.DateTime
+
+@(title: String, publishDate: DateTime, tags: List[String])
+
+<p>I ran into a unexpected operator precedence issue in Scala the other day with this code:</p>
+
+@scalaBlock(
+    """
+    val futureResponse = WS.url("http://query.yahooapis.com/v1/public/yql")
+      .withHeaders("Accept" -> "application/json")
+      .withQueryString(
+        "q" -> "select * from yahoo.finance.quotes where symbol in (" + symbol + ")",
+        "format" -> "json",
+        "env" -> "store://datatables.org/alltableswithkeys",
+      )
+      .get()
+    """
+)
+
+<p>The compiler complains about a type error "(String) found where (String, String) expected."
+    Pretty obvious that the string concatenation <code>+</code> operators are breaking the <code>Map</code> tuples.</p>
+
+<p>As it turns out, Scala's operator precedence is defined by the first character in the operator
+    so <code>Map</code>'s <code>-></code> and <code>String</code>'s <code>+</code> operators have the same precedence...
+    so in other words, you can't use string concatenation in <code>Map</code>s (or any <code>+</code> or <code>-</code>
+    operators) without surrounding them in parenthesis.
+    (see <a href="http://stackoverflow.com/questions/2922347/operator-precedence-in-scala/2922456#2922456">this
+    explanation operator precedence</a>)</p>
+
+<p>The issue is clearly demonstrated with this little example:</p>
+
+@scalaBlock(
+    """
+    scala> val x = Map("a" -> "one", "b" -> "two")
+    x: scala.collection.immutable.Map[String,String] = Map(a -> one, b -> two)
+
+    scala> val x = Map("a" -> "one" + "...", "b" -> "two")
+    <console>:7: error: type mismatch;
+    found   : String
+    required: (?, ?)
+    val x = Map("a" -> "one" + "...", "b" -> "two")
+    ^
+
+    scala> val x = Map("a" -> ("one" + "..."), "b" -> "two")
+    x: scala.collection.immutable.Map[String,String] = Map(a -> one..., b -> two)
+    """
+)
+

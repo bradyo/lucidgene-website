@@ -1,0 +1,136 @@
+@import views.html.helpers.javaBlock
+@import org.joda.time.DateTime
+
+@(title: String, publishDate: DateTime, tags: List[String])
+
+<p>Consider the following argument:</p>
+
+<blockquote>
+    <p>a = "Socrates is a man."<br />
+        b = "All men are mortal."<br />
+        c = "Socrates is mortal."</p>
+</blockquote>
+
+<p>Deductive reasoning can be useful for constructing unit/integration test combos that guarantee a class
+    that works with one implementations of an interface will work for all implementations of that interface.</p>
+
+<p>This example shows how to construct a group of tests that will verify a MessageQueue Consumer will work
+    when using a remote MessageQueue service (i.e. Amazon SQS) without directly testing the class with
+    the high-latency remote MessageQueue.</p>
+
+<p>To understand this solution at the propositional logic level, consider these statements:</p>
+
+<blockquote>
+    <p>a = "ArrayMessageQueue and SqsMessageQueue are valid MessageQueue implementations"<br />
+        b = "QueueConsumer works with ArrayMessageQueue implementation"<br />
+        c = "QueueConsumer works with all MessageQueue implementations"</p>
+</blockquote>
+
+<p>If a and b are true, then it follows that c is true.</p>
+
+<p>Some example code demonstrating the implementations and tests are below:</p>
+
+@javaBlock("""
+    class Message {
+        public Integer id;
+        public String body;
+    }
+
+    interface MessageQueue {
+        Message getMessage() throws EmptyQueueException;
+        void deleteMessage(Integer id);
+    }
+
+    class SqsMessageQueue implements MessageQueue {
+        private AmazonSQSClient client;
+        public SqsMessageQueue(AmazonSQSClient client) {
+            this.client = client;
+        }
+        public Message getMessage() throws EmptyQueueException {
+            // Client calls to get message...
+        }
+        void deleteMessage(Integer id) {
+            // Client calls to delete message...
+        }
+    }
+
+    class ArrayMessageQueue implements MessageQueue {
+        private ArrayList<Message> messages;
+        public ArrayMessageQueue() {
+            this.messages = new ArrayList();
+        }
+        public Message getMessage() throws EmptyQueueException {
+            // Get a message from array
+        }
+        public void deleteMessage(Integer id) {
+            // Delete a message from array
+        }
+    }
+    """)
+
+@javaBlock("""
+    class SqsMessageQueueTest {
+        public testGetMessage() {
+            // Set up queue and make sure we can get message
+        }
+        public testDeleteMessage() {
+            // Set up queue and make sure we can delete messages
+        }
+    }
+
+    class ArrayMessageQueueTest {
+        public testGetMessage() {
+            // Set up queue and make sure we can get message
+        }
+        public testDeleteMessage() {
+            // Set up queue and make sure we can delete messages
+        }
+    }
+    """)
+
+@javaBlock("""
+    class QueueConsumer {
+        private MessageQueue queue;
+        private Integer messagesConsumed = 0;
+
+        public QueueConsumer(MessageQueue queue) {
+            this.queue = queue;
+        }
+
+        public void consume() {
+            try {
+                Message message = queue.getMessage();
+                System.out.println("Consuming message: " + message.body);
+                queue.delete(message);
+                messagesConsumed++;
+            }
+            catch (EmptyQueueException e) {
+                System.out.println("No messages to consume");
+            }
+        }
+
+        public Integer getMessagesConsumed() {
+            return messagesConsumed;
+        }
+    }
+    """)
+
+@javaBlock("""
+    class QueueConsumerTest {
+        public testConsume() {
+            MessageQueue queue = new ArrayMessageQueue();
+            queue.addMessage("hello");
+            queue.addMessage("world");
+
+            QueueConsumer consumer = new QueueConsumer(queue);
+            consumer.consume();
+            consumer.consume();
+            assertEquals(2, consumer.getMessagesConsumed());
+        }
+    }
+    """)
+
+<p>Since we have tested QueueConsumer with ArrayMessageQueue, and have tested that ArrayMessageQueue
+    and SqsMessageQueue implement the MessageQueue interface correctly, we can safely assume QueueConsumer
+    will work with SqsMessageQueue without having to test against the external message queue directly.
+    This technique allows you to swap local implementations for remote services during tests.</p>
