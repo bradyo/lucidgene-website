@@ -14,11 +14,11 @@ abstract class Article() {
 
 case class MappedArticle(slug: String, article: Article)
 
-object DryArticle extends Article {
-  override val title = "Do Not Repeat Yourself (DRY)"
+object DryHtmlArticle extends Article {
+  override val title = "Don't Repeat Yourself HTML Refactoring"
   override val publishDate = DateTime.parse("2015-09-19")
   override val tags = List("Refactoring")
-  override val content = dryContent(title, publishDate, tags)
+  override val content = dryHtmlContent(title, publishDate, tags)
   override val coverImage = "cover-13.jpg"
 }
 

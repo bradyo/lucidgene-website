@@ -7,6 +7,7 @@ import views.html.articles._
 class NotebookController extends Controller {
 
   val mappedArticles = List(
+    MappedArticle("dry-html-refactoring", DryHtmlArticle),
     MappedArticle("narrowing-overly-generic-contracts", NarrowingContractsArticle),
     MappedArticle("deductive-reasoning-in-integration-tests", IntegrationTestsArticle),
     MappedArticle("scala-operator-precedence-gotcha", ScalaPrecedenceArticle),

@@ -25,7 +25,7 @@
                             @for(mappedArticle <- mappedArticles) {
                                 <li>
                                     <a href="@routes.NotebookController.showArticle(mappedArticle.slug)">@mappedArticle.article.title</a>
-                                    <span class="page-listing-date">- @date(mappedArticle.article.publishDate)</span>
+                                    <span class="page-listing-date">@date(mappedArticle.article.publishDate)</span>
                                 </li>
                             }
                         </ul>
@@ -39,31 +39,26 @@
                     <div class="panel-body">
                         <ul class="page-listing">
                             <li>
-                                <a href="http://www.amazon.com/Growing-Object-Oriented-Software-Guided-Tests/dp/0321503627/ref=sr_1_1">
-                                    Growing Object Oriented Software Guided by Tests</a>
-                                <p>Demonstrates how to build features incrementally in vertical feature slices. Gives
-                                    good examples for structuring and testing your code.</p>
+                                <a href="http://www.amazon.com/Implementing-Domain-Driven-Design-Vaughn-Vernon/dp/0321834577/ref=pd_sim_14_1">
+                                    Implementing Domain-Driven Design</a>
+                                <p>How to model business domains and define boundaries between modules.
+                                    Anti-corruption layer in domain bounded contexts can be applied to modeling
+                                    ports-and-adapters architectures.</p>
                             </li>
                             <li>
-                                <a href="http://www.amazon.com/Domain-Driven-Design-Tackling-Complexity-Software/dp/0321125215/ref=sr_1_1">
-                                    Domain Driven Design</a>
-                                <p>Explains how to model business domains and define boundaries between modules.
-                                    Anti-corruption layer in domain bounded contexts can be applied to modeling in a
-                                    ports-and-adapters architectures.</p>
+                                <a href="http://www.amazon.com/Growing-Object-Oriented-Software-Guided-Tests/dp/0321503627/ref=sr_1_1">
+                                    Growing Object Oriented Software Guided by Tests</a>
+                                <p>Demonstrates how to build features incrementally in vertical slices. Gives
+                                    examples for structuring and testing your code.</p>
                             </li>
                             <li>
                                 <a href="https://ucvox.files.wordpress.com/2012/11/113617905-scaling-agile-spotify-11.pdf">
                                     Scaling Agile @@ Spotify - with Tribes, Squads, Chapters, and Guilds</a>
-                                <p>Interesting read about how Spotify keeps agile principles and self-directed
-                                    development at a large scale.</p>
+                                <p>How Spotify keeps agile principles and self-directed development at large scale.</p>
                             </li>
                             <li>
                                 <a href="http://12factor.net/">The Twelve-Factor App</a>
-                                <p>Guidelines for building scalable, cloud-based application.</p>
-                            </li>
-                            <li>
-                                <a href="http://www.yegor256.com/best.html">Yegor Bugayenko's Blog</a>
-                                <p>Interesting ideas in immutability and object-oriented thinking.</p>
+                                <p>Guidelines for building scalable, cloud-based applications.</p>
                             </li>
                             <li>
                                 <a href="https://archive.org/details/abstraction_of_code">
@@ -80,17 +75,40 @@
                                     Getting Things Done: The Art of Stress-Free Productivity</a>
                                 <p>Simple way to organize to-do list into actionables.</p>
                             </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-heading">
+                        <h3>Following</h3>
+                    </div>
+                    <div class="panel-body">
+                        <ul class="page-listing">
                             <li>
                                 <a href="http://reddit.com/r/programming">Reddit /r/programming</a>
-                                <p>Get updated on the latest programming trends, frameworks, languages, and patterns.</p>
+                                <p>Updates on the latest programming trends, frameworks, languages, and patterns.</p>
                             </li>
                             <li>
                                 <a href="https://news.ycombinator.com/">Hacker News</a>
-                                <p>Get updated on the latest start-up trends and small business articles.</p>
+                                <p>Updates on the latest start-up trends and small business articles.</p>
+                            </li>
+                            <li>
+                                <a href="http://www.smashingmagazine.com/">Smashing Magazine</a>
+                                <p>Best articles in web design and user experience.</p>
+                            </li>
+                            <li>
+                                <a href="http://www.yegor256.com/best.html">Yegor Bugayenko's Blog</a>
+                                <p>Interesting ideas in immutability and object-oriented thinking.</p>
+                            </li>
+                            <li>
+                                <a href="http://highscalability.com">High Scalability</a>
+                                <p>Insights into how companies solve various web-scale problems.</p>
                             </li>
                         </ul>
                     </div>
                 </div>
+
             </div>
         </div>
     </div>

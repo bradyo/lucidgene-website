@@ -1,0 +1,603 @@
+@import views.html.helpers.scalaBlock
+@import org.joda.time.DateTime
+
+@(title: String, publishDate: DateTime, tags: List[String])
+
+<h2>Introduction</h2>
+
+<p>The DRY (Don't Repeat Yourself) Principle is more about refactoring code to create
+single representations of a concept within the codebase than simply removing duplication.
+Finding duplication often helps define concepts that can be extracted and composed
+to build a fully orthogonal codebase (no duplication, or overlap in knowledge).</p>
+
+<p>This article walks though a non-trivial refactoring of some HTML code following the
+DRY principles.</p>
+
+<p>The following articles provide more information about DRY:</p>
+
+<ul>
+    <li>
+        <a href="https://en.wikipedia.org/wiki/Don%27t_repeat_yourself">
+            Don't repeat yourself
+        </a>
+    </li>
+    <li>
+        <a href="http://code.tutsplus.com/tutorials/3-key-software-principles-you-must-understand--net-25161">
+            3 Key Software Principles You Must Understand
+        </a>
+    </li>
+    <li>
+        <a href="http://verraes.net/2014/08/dry-is-about-knowledge/">
+            DRY is About Knowledge
+        </a>
+    </li>
+    <li>
+        <a href="http://www.artima.com/intv/dry.html">
+            Orthogonality and the DRY Principle
+        </a>
+    </li>
+    <li>
+        <a href="http://www.codelord.net/2010/11/04/dry-dont-get-trigger-happy/">
+            DRY: Don't Get Trigger Happy
+        </a>
+    </li>
+</ul>
+
+<h2>Starting Code</h2>
+
+@scalaBlock(
+  """
+  <h1>Create User</h1>
+  <div class="row">
+    <div class="col-md-6">
+      <div class="panel">
+        <div class="panel-heading">
+          <h2>Definition</h2>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div class="definition">
+          <div class="signature">
+            <span class="method">POST</span>
+            <span class="url">/users</span>
+          </div>
+          <table class="params">
+            <tr>
+              <th>Name</th>
+              <th>Description</th>
+            </tr>
+            <tr>
+              <td>email</td>
+              <td>E-mail address of new user.</td>
+            </tr>
+          </table>
+        </div>
+        <div class="example">
+          <pre><code class="curl">
+            curl -X POST https://localhost:9000/users -d '{"email":"someone@example.com"}'
+          </code></pre>
+        </div>
+      </div>
+    </div>
+  
+    <div class="col-md-6">
+      <div class="panel">
+        <div class="panel-heading">
+          <h2>Try It</h2>
+        </div>
+      </div>
+      <div class="panel-body">
+        <form>
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" class="form-control" id="email" placeholder="Enter email">
+          </div>
+          <button type="submit" class="btn btn-default">Submit</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  
+  <h1>Get User</h1>
+  <div class="row">
+    <div class="col-md-6">
+      <div class="panel">
+        <div class="panel-heading">
+          <h2>Definition</h2>
+        </div>
+        <div class="panel-body">
+          <div class="definition">
+            <div class="signature">
+              <span class="method">GET</span>
+              <span class="url">/users/{userId}</span>
+            </div>
+          </div>
+          <div class="example">
+            <pre><code class="curl">
+              curl -X GET https://localhost:9000/users/1
+            </code></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  
+    <div class="col-md-6">
+      <div class="panel">
+        <div class="panel-heading">
+          <h2>Try It</h2>
+        </div>
+        <div class="panel-body">
+          <form>
+            <div class="form-group">
+              <label for="userId">User ID</label>
+              <input type="text" class="form-control" id="userId" placeholder="Enter User ID">
+            </div>
+            <button type="submit" class="btn btn-default">Submit</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  """
+)
+
+<h2>Identifying Orthogonal Representations</h2>
+
+<P>The first thing we need to do is identify which parts of the code are repeated because
+they represent the same kind of thing. Forget about the code for a second and think about
+what the code is actually trying to represent. In this example, we are representing
+a list of endpoints. For each endpoint we are showing two columns, the left contains a
+definition of the endpoint, the right contains a test form. Additionally, we see that the
+endpoint definition contains a signature, list of parameters, and a code example.</p>
+
+<p>Visually, this knowledge representation looks something like this:</p>
+
+<ul>
+    <li>
+        endpoint
+        <ul>
+            <li>
+                left-column
+                <ul>
+                    <li>
+                        definition
+                        <ul>
+                            <li>signature</li>
+                            <li>parameters</li>
+                            <li>example-code</li>
+                        </ul>
+                    </li>
+                </ul>
+            </li>
+            <li>
+                right-column
+                <ul>
+                    <li>
+                        try-it-panel
+                        <ul>
+                            <li>try-form</li>
+                        </ul>
+                    </li>
+                </ul>
+            </li>
+        </ul>
+    </li>
+</ul>
+
+<p>Now that we have and idea of how knowledge should be represented orthogonally,
+we can start refactoring the code to remove duplication.</p>
+
+<h2>DRY-ing Up Code - Stage 1</h2>
+
+<p>Start from the bottom-up, extracting duplicate code into functions.
+The following <code>button</code> code appears twice:</p>
+
+@scalaBlock(
+    """
+    <button type="submit" class="btn btn-default">Submit</button>
+    """
+)
+
+<p>We know it represents a single concept "submit button". We should then DRY up
+the code by extracting that knowledge into a single place:</p>
+
+@scalaBlock(
+    """
+    def submitButton() = <button type="submit" class="btn btn-default">Submit</button>
+    """
+)
+
+<p>Now, the <code>submitButton</code> appears in form, which is also duplicated in the page.
+We can similarly extract the form. The form structure is common between the two
+uses, but the data it contains is not duplicated (each form has different field inputs).<p>
+
+@scalaBlock(
+    """
+    def tryItFormParam(param: Parameter) =
+        <div class="form-group">
+            <label for="@param.id">@param.label</label>
+            <input type="text" class="form-control" id="@param.id" placeholder="@param.placeholder">
+        </div>
+
+    def tryItForm(params: List[Parameter]) =
+        <form>
+            @for(param <- params) {
+                @tryItFormParam(param)
+            }
+            @submitButton()
+        </form>
+    """
+)
+
+<p>Similarly, we can look at the "endpoint" sections that are duplicated and extract
+concepts. At the bottom, we have an "example", which has duplicated structure, but not
+duplicate data, just like the <code>tryItForm</code> parameters. We will DRY it up in the same
+way:</p>
+
+@scalaBlock(
+    """
+    def example(code: String) =
+        <div class="example">
+            <pre><code class="curl">
+                @code
+            </code></pre>
+        </div>
+    """
+)
+
+<p>The "signature" can be extracted similarly, as well as the parameter table:</p>
+
+@scalaBlock(
+    """
+    def signature(method: String, url: String) =
+        <div class="signature">
+            <span class="method">@method</span>
+            <span class="url">@url</span>
+        </div>
+
+    def paramTable(params: List(Param)) =
+        <table class="params">
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+            </tr>
+            @for(param <- params) {
+                <tr>
+                    <td>@param.id</td>
+                    <td>@param.description</td>
+                </tr>
+            }
+        </table>
+    """
+)
+
+<p>Now, we can already see the benefits of DRY-ing bottom-up when we go to DRY the
+endpoint "definition" concept, since we can compose the method extraction using
+the other extractions:</p>
+
+@scalaBlock(
+    """
+    def definition(method: String, url: String, params: List[Param], code: String) =
+        <div class="definition">
+            @signature(method, url)
+            @if(! params.isEmpty) {
+                @paramTable(params)
+            }
+            @example(code)
+        </div>
+    """
+)
+
+<p>After this round of applying DRY to normalize concepts across the code, it looks like
+this:</p>
+
+@scalaBlock(
+    """
+    <h1>Create User</h1>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="panel">
+                <div class="panel-heading">
+                    <h2>Definition</h2>
+                </div>
+            </div>
+            <div class="panel-body">
+                @definition(
+                    "POST",
+                    "/users",
+                    List(Param("email", "E-mail address of new user.")),
+                    "curl -X POST https://localhost:9000/users
+                      -d '{"email": "somebody@domain.com"}' "
+                )
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="panel">
+                <div class="panel-heading">
+                    <h2>Try It</h2>
+                </div>
+            </div>
+            <div class="panel-body">
+                @tryItForm(List(Input("email", "Email", "Enter email")))
+            </div>
+        </div>
+    </div>
+
+    <h1>Get User</h1>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="panel">
+                <div class="panel-heading">
+                    <h2>Definition</h2>
+                </div>
+                <div class="panel-body">
+                    @definition(
+                        "GET",
+                        "/users/{userId}",
+                        List.empty,
+                        "curl -X GET https://localhost:9000/users/1"
+                    )
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="panel">
+                <div class="panel-heading">
+                    <h2>Try It</h2>
+                </div>
+                <div class="panel-body">
+                    @tryItForm(List(Input("userId", "User ID", "Enter User ID")))
+                </div>
+            </div>
+        </div>
+    </div>
+    """
+)
+
+<p>After this stage of DRY-ing up the code, it is much more readable. The concepts have been
+clearly extracted so that they are not repeated. As a result, any time we need to make
+changes to the "concept", there is single place to change (the functions we extracted).</p>
+
+
+<h2>DRY-ing Up Code - Stage 2</h2>
+
+<p>Despite extracting the main components, there is still some presentational "concepts" that are
+duplicated in the code, the panels and the layout columns. Following the bottom-up approach,
+we first extract the panels.</p>
+
+<p>Since there are two types of panels (the "Endpoint" panel and the "Try It" panel), representing
+different concepts, we can extract them separately.</p>
+
+@scalaBlock(
+    """
+    def definitionPanel(method: String, url: String, params: List[Param], code: String) =
+        <div class="panel">
+            <div class="panel-heading">
+                <h2>Definition</h2>
+            </div>
+            <div class="panel-body">
+                @definition(method, url, params, code)
+            </div>
+        </div>
+
+    def tryItPanel(inputs: List[Input]) =
+        <div class="panel">
+            <div class="panel-heading">
+                <h2>Try It</h2>
+            </div>
+            <div class="panel-body">
+                @tryItForm(inputs)
+            </div>
+        </div>
+    """
+)
+
+<p>There's still some duplication here since there is an orthogonal concept "panel" that we still
+haven't extracted. Doing so gives the following:</p>
+
+
+@scalaBlock(
+    """
+    def panel(title: String, content: Html) =
+        <div class="panel">
+            <div class="panel-heading">
+                <h2>@title</h2>
+            </div>
+            <div class="panel-body">
+                @content
+            </div>
+        </div>
+
+    def definitionPanel(method: String, url: String, params: List[Param], code: String) =
+        panel("Endpoint", definition(method, url, params, code)
+
+    def tryItPanel(inputs: List[Input]) =
+        panel("Try It", tryItForm(inputs))
+    """
+)
+
+<p>Finally, extract the "endpoint" concept, which contains the 2-column layout:</p>
+
+
+@scalaBlock(
+    """
+    def endpoint(method: String, url: String, params: List[Param], code: String, inputs: List[Input]) =
+        <div class="row">
+            <div class="col-md-6">
+                @definitionPanel(method, url, params, code)
+            </div>
+            <div class="col-md-6">
+                @tryItPanel(inputs)
+            </div>
+        </div>
+    """
+)
+
+<p>As of introducing the "endpoint" concept, there is no more duplication. We didn't need to
+extract a method for the 2-column layout since no other concepts require it other than
+"endpoint" (the concepts are orthagonal). We could extract the "col-md-6" columns to
+remove duplication, but conceptually these things are different. The first is for the left
+column, and the second is for the right column. That they have the same structure is
+more of a coincidence than an actual redundancy in concepts. Keeping them allows them to
+vary independently, for example, changing the endpoint to show smaller try-it column:</p>
+
+@scalaBlock(
+    """
+    def endpoint(method: String, url: String, params: List[Param], code: String, inputs: List[Input]) =
+        <div class="row">
+            <div class="col-md-9">
+                @definitionPanel(method, url, params, code)
+            </div>
+            <div class="col-md-3">
+                @tryItPanel(inputs)
+            </div>
+        </div>
+    """
+)
+
+<p>The final DRY code looks like this:</p>
+
+@scalaBlock(
+    """
+    def signature(method: String, url: String) =
+        <div class="signature">
+            <span class="method">@method</span>
+            <span class="url">@url</span>
+        </div>
+
+    def paramTable(params: List(Param)) =
+        <table class="params">
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+            </tr>
+            @for(param <- params) {
+                <tr>
+                    <td>@param.id</td>
+                    <td>@param.description</td>
+                </tr>
+            }
+        </table>
+
+    def example(code: String) =
+        <div class="example">
+            <pre><code class="curl">
+                @code
+            </code></pre>
+        </div>
+
+    def definition(method: String, url: String, params: List[Param], code: String) =
+        <div class="definition">
+            @signature(method, url)
+            @if(! params.isEmpty) {
+                @paramTable(params)
+            }
+            @example(code)
+        </div>
+
+    def tryItFormParam(param: Parameter) =
+        <div class="form-group">
+            <label for="@param.id">@param.label</label>
+            <input type="text" class="form-control" id="@param.id" placeholder="@param.placeholder">
+        </div>
+
+    def tryItForm(params: List[Parameter]) =
+        <form>
+            @for(param <- params) {
+                @tryItFormParam(param)
+            }
+            @submitButton()
+        </form>
+
+    def panel(title: String, content: Html) =
+        <div class="panel">
+            <div class="panel-heading">
+                <h2>@title</h2>
+            </div>
+            <div class="panel-body">
+                @content
+            </div>
+        </div>
+
+    def definitionPanel(method: String, url: String, params: List[Param], code: String) =
+        panel("Endpoint", definition(method, url, params, code)
+
+    def tryItPanel(inputs: List[Input]) =
+        panel("Try It", tryItForm(inputs))
+
+    def endpoint(method: String, url: String, params: List[Param], code: String, inputs: List[Input]) =
+        <div class="row">
+            <div class="col-md-9">
+                @definitionPanel(method, url, params, code)
+            </div>
+            <div class="col-md-3">
+                @tryItPanel(inputs)
+            </div>
+        </div>
+
+
+    <h1>Create User</h1>
+    @endpoint(
+        "POST",
+        "/users",
+        List(Param("email", "E-mail address of new user.")),
+        List(Input("email", "Email", "Enter email"))
+    )
+
+    <h1>Get User</h1>
+    @endpoint(
+        "GET",
+        "/users/{userId}",
+        List.empty,
+        "curl -X GET https://localhost:9000/users/1",
+        List(Input("userId", "User ID", "Enter User ID"))
+    )
+    """
+)
+
+<p>Adding a new endpoint is trivial:</p>
+
+@scalaBlock(
+    """
+    <h1>Update User</h1>
+    @endpoint(
+        "PUT",
+        "/users/{userId}",
+        List(Param("email", "E-mail address.")),
+        "curl -X PUT https://localhost:9000/users/1
+          -d '{"email": "someone2@example.com"}' "
+        ,
+        List(
+            Input("userId", "User ID", "Enter User ID"),
+            Input("email", "Email", "Enter email")
+        )
+    )
+    """
+)
+
+<h2>DRY Feedback Loop</h2>
+
+<p>Developing DRY code is not always such a straightforward thing. In many cases, the knowlege
+being represented in the code does not appear as a clear duplication of concepts until
+it starts to appear frequently. Sometimes it is necessary to modify the way code looks to
+recognize the duplication.</p>
+
+<p>It is very easy to see "duplication" in code and think it represents a single concept,
+but sometimes those concepts have the same form, but are fundamentally different. Removing
+duplication in that case introduces a bad coupling that can make code even more
+brittle and difficult to maintain.</p>
+
+<p>Other times, you have DRY code and you need to add some behavior to some sub-set of
+cases. That may be a warning that you have combined two different concepts into one.
+Rather than adding conditionals to your code, the "knowlege"
+may need to be split into two separate concepts that can change independently, in effect
+undoing an existing DRY refactoring.</p>
+
+<h2>Conclusion</h2>
+
+<p>DRY is a powerful principle for refactoring code and goes a long way in improving the
+readability and maintainability of a code project. This walk-through demonstrated
+how to apply DRY from the bottom-up to incrementally extract duplicated "concepts" into
+methods.</p>
